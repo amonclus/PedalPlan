@@ -1,0 +1,9 @@
+.env
+tokens.json
+user_settings.json
+.streamlit.pid
+streamlit.log
+__pycache__/
+*.pyc
+.DS_Store
+.idea/

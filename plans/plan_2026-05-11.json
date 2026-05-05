@@ -1,0 +1,137 @@
+{
+  "week_commencing": "2026-05-11",
+  "summary": "Recovery week with gentle base-building rides and one moderate threshold effort. TSB is positive and fitness is stabilising, so we'll ease back in with mostly Z1\u2013Z2 work.",
+  "days": [
+    {
+      "day": "Monday",
+      "type": "Easy",
+      "duration_min": 75,
+      "description": "Gentle spin to activate the legs after the weekend. Keep effort conversational; this is about getting the body moving without stress.",
+      "structure": [
+        {
+          "label": "Full ride",
+          "duration_min": 75,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Easy gravel or road ride. Focus on smooth pedalling and relaxed effort. Heart rate should stay below 130 bpm."
+        }
+      ]
+    },
+    {
+      "day": "Tuesday",
+      "type": "Endurance",
+      "duration_min": 90,
+      "description": "Sustained low-intensity work to build aerobic base. Longer than Monday but still well within Z1\u2013Z2; think 'steady conversation pace'.",
+      "structure": [
+        {
+          "label": "Warm-up",
+          "duration_min": 10,
+          "zone": "Z1",
+          "power_pct": "< 55%",
+          "notes": "Easy spin to get settled in."
+        },
+        {
+          "label": "Main ride",
+          "duration_min": 75,
+          "zone": "Z2",
+          "power_pct": "75-90%",
+          "notes": "Steady cruising. Maintain effort around 110\u2013125 bpm. Let the pace feel natural on terrain."
+        },
+        {
+          "label": "Cool-down",
+          "duration_min": 5,
+          "zone": "Z1",
+          "power_pct": "< 55%",
+          "notes": "Easy spin to finish."
+        }
+      ]
+    },
+    {
+      "day": "Wednesday",
+      "type": "Rest",
+      "duration_min": 0,
+      "description": "Full rest day. Recover well; no riding.",
+      "structure": []
+    },
+    {
+      "day": "Thursday",
+      "type": "Threshold",
+      "duration_min": 75,
+      "description": "Moderate threshold work to maintain fitness. One solid effort block with recovery on either side. This is your only intensity session this week.",
+      "structure": [
+        {
+          "label": "Warm-up",
+          "duration_min": 15,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Gradual build. Start easy and feel the legs warming up."
+        },
+        {
+          "label": "Main set",
+          "duration_min": 40,
+          "zone": "Z3-Z4",
+          "power_pct": "88-105%",
+          "notes": "2 \u00d7 20 min at threshold effort (around 240 W), with 5 min easy (Z1) between. Aim for steady, controllable intensity."
+        },
+        {
+          "label": "Cool-down",
+          "duration_min": 20,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Gradual spin down to recover."
+        }
+      ]
+    },
+    {
+      "day": "Friday",
+      "type": "Easy",
+      "duration_min": 60,
+      "description": "Recovery ride after Thursday's effort. Keep it light and short; focus on clearing the legs rather than building fitness.",
+      "structure": [
+        {
+          "label": "Full ride",
+          "duration_min": 60,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Relaxed gravel spin. Effort should feel effortless; HR around 110\u2013125 bpm. This prepares for the weekend."
+        }
+      ]
+    },
+    {
+      "day": "Saturday",
+      "type": "Long Ride",
+      "duration_min": 120,
+      "description": "Your longest aerobic ride of the week. Steady, conversational pace building time on the bike and aerobic base.",
+      "structure": [
+        {
+          "label": "Warm-up",
+          "duration_min": 10,
+          "zone": "Z1",
+          "power_pct": "< 55%",
+          "notes": "Easy spin to settle in."
+        },
+        {
+          "label": "Main ride",
+          "duration_min": 105,
+          "zone": "Z2",
+          "power_pct": "75-90%",
+          "notes": "Steady-state. Maintain around 115\u2013130 bpm. On varied terrain (gravel preferred). Build time on the bike comfortably."
+        },
+        {
+          "label": "Cool-down",
+          "duration_min": 5,
+          "zone": "Z1",
+          "power_pct": "< 55%",
+          "notes": "Easy spin to finish."
+        }
+      ]
+    },
+    {
+      "day": "Sunday",
+      "type": "Rest",
+      "duration_min": 0,
+      "description": "Full rest day. Preferred recovery day. No riding.",
+      "structure": []
+    }
+  ]
+}
