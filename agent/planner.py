@@ -1,10 +1,8 @@
 import json
-import os
 from datetime import date, timedelta
 
 import anthropic
 
-_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 _MODEL = "claude-haiku-4-5-20251001"
 
 SYSTEM_PROMPT = """You are an experienced cycling coach specialising in amateur athletes.
@@ -173,9 +171,10 @@ Recent individual rides (last 4 weeks):
 {_OUTPUT_SCHEMA}"""
 
 
-def generate_plan(activities: list[dict], load_df, user_params: dict) -> dict:
+def generate_plan(activities: list[dict], load_df, user_params: dict, api_key: str) -> dict:
+    client = anthropic.Anthropic(api_key=api_key)
     prompt = _build_prompt(activities, load_df, user_params)
-    message = _client.messages.create(
+    message = client.messages.create(
         model=_MODEL,
         max_tokens=4096,
         system=SYSTEM_PROMPT,

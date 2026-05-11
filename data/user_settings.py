@@ -1,7 +1,6 @@
 import json
-from pathlib import Path
 
-SETTINGS_FILE = Path(__file__).parent.parent / "user_settings.json"
+import db
 
 DEFAULTS = {
     "ftp": 250,
@@ -12,15 +11,13 @@ DEFAULTS = {
 }
 
 
-def load_settings() -> dict:
-    if not SETTINGS_FILE.exists():
+def load_settings(athlete_id: int) -> dict:
+    raw = db.get_settings(athlete_id)
+    if not raw:
         return DEFAULTS.copy()
-    with open(SETTINGS_FILE) as f:
-        saved = json.load(f)
-    # Merge with defaults so new keys added in future are always present
+    saved = json.loads(raw)
     return {**DEFAULTS, **saved}
 
 
-def save_settings(settings: dict):
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(settings, f, indent=2)
+def save_settings(athlete_id: int, settings: dict):
+    db.save_settings_json(athlete_id, json.dumps(settings))

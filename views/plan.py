@@ -126,7 +126,7 @@ def _swap_sessions(idx_a: int, idx_b: int):
         val_b = days[idx_b].get(field)
         days[idx_a][field] = val_b
         days[idx_b][field] = val_a
-    save_plan(plan)
+    save_plan(st.session_state["athlete_id"], plan)
     st.rerun()
 
 
@@ -138,7 +138,7 @@ def _delete_session(idx: int):
         "duration_min": 0,
         "structure": [],
     })
-    save_plan(plan)
+    save_plan(st.session_state["athlete_id"], plan)
     st.rerun()
 
 
@@ -208,7 +208,7 @@ def _edit_form(idx: int, day: dict):
             step_total = sum(s["duration_min"] for s in new_structure)
             if step_total > 0:
                 d["duration_min"] = step_total
-        save_plan(plan)
+        save_plan(st.session_state["athlete_id"], plan)
         st.session_state[f"editing_day_{idx}"] = False
         st.rerun()
 
@@ -365,6 +365,14 @@ def _render_current(activities, load_df, session):
         key="plan_comments",
     )
 
+    api_key = session.get("claude_api_key", "")
+    if not api_key:
+        st.warning(
+            "Add your Claude API key in **Settings → Claude API Key** to enable plan generation.",
+            icon="🔑",
+        )
+        return
+
     btn_col, _ = st.columns([2, 5])
     label = "Generate New Plan" if plan else "Generate Plan"
     if btn_col.button(label, type="primary"):
@@ -378,8 +386,8 @@ def _render_current(activities, load_df, session):
         }
         with st.spinner("Generating your training plan…"):
             try:
-                new_plan = generate_plan(activities, load_df, user_params)
-                save_plan(new_plan)
+                new_plan = generate_plan(activities, load_df, user_params, api_key)
+                save_plan(session["athlete_id"], new_plan)
                 st.session_state["current_plan"] = new_plan
                 # Clear any open edit forms from the old plan
                 for key in list(st.session_state.keys()):
@@ -440,7 +448,7 @@ def _render_current(activities, load_df, session):
 
 def _render_history(session: dict):
     st.header("Plan History")
-    all_plans = load_all_plans()
+    all_plans = load_all_plans(session["athlete_id"])
     if not all_plans:
         st.info("No saved plans yet. Generate your first plan above.")
         return

@@ -1,0 +1,12 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+tokens.json
+user_settings.json
+plans/
+db.sqlite
+.env
+.git
+streamlit.log
+desktop_app.py

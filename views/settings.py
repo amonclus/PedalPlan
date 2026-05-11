@@ -1,12 +1,14 @@
+import anthropic
 import pandas as pd
 import streamlit as st
 
-from auth.strava_oauth import revoke_tokens
+import db
 from data.strava_client import parse_hr_zones, parse_power_zones
 from data.user_settings import save_settings
 
 
 def render(athlete: dict, strava_zones: dict):
+    athlete_id: int = st.session_state["athlete_id"]
     st.header("Settings")
 
     # ── Strava account ─────────────────────────────────────────────────────────
@@ -17,7 +19,7 @@ def render(athlete: dict, strava_zones: dict):
     col3.markdown(f"**Strava ID:** {athlete.get('id', '—')}")
 
     if st.button("Disconnect Strava", type="secondary"):
-        revoke_tokens()
+        st.session_state["_do_logout"] = True
         st.rerun()
 
     st.divider()
@@ -81,7 +83,7 @@ def render(athlete: dict, strava_zones: dict):
             "rest_days": rest_days,
         }
         st.session_state.update(new_settings)
-        save_settings(new_settings)
+        save_settings(athlete_id, new_settings)
         st.session_state["_settings_saved"] = True
         st.rerun()
 
@@ -99,6 +101,40 @@ def render(athlete: dict, strava_zones: dict):
     # ── Power zones ────────────────────────────────────────────────────────────
     st.subheader("Power Zones")
     _render_power_zones(strava_zones, st.session_state["ftp"])
+
+    st.divider()
+
+    # ── Claude API key ─────────────────────────────────────────────────────────
+    st.subheader("Claude API Key")
+    st.caption(
+        "Used to generate your training plans. Your key is stored privately and never shared. "
+        "[Get a key →](https://console.anthropic.com/settings/keys)"
+    )
+
+    current_key = db.get_claude_api_key(athlete_id) or ""
+    has_key = bool(current_key)
+
+    if has_key:
+        masked = current_key[:8] + "•" * 20
+        st.markdown(f"Current key: `{masked}`")
+
+    with st.form("claude_key_form"):
+        new_key = st.text_input(
+            "New API key" if has_key else "API key",
+            type="password",
+            placeholder="sk-ant-...",
+        )
+        submit_key = st.form_submit_button("Save Key", type="primary")
+
+    if submit_key and new_key.strip():
+        try:
+            anthropic.Anthropic(api_key=new_key.strip()).models.list()
+            db.set_claude_api_key(athlete_id, new_key.strip())
+            st.session_state["claude_api_key"] = new_key.strip()
+            st.success("API key saved.")
+            st.rerun()
+        except Exception:
+            st.error("Could not validate key. Check it and try again.")
 
 
 def _render_hr_zones(strava_zones: dict, current_hr: dict):

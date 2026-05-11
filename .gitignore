@@ -1,6 +1,8 @@
 .env
 tokens.json
 user_settings.json
+db.sqlite
+_store/
 .streamlit.pid
 streamlit.log
 __pycache__/

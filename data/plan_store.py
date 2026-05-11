@@ -1,25 +1,18 @@
 import json
-from pathlib import Path
 
-PLANS_DIR = Path(__file__).parent.parent / "plans"
+import db
 
 
-def save_plan(plan: dict):
-    PLANS_DIR.mkdir(exist_ok=True)
+def save_plan(athlete_id: int, plan: dict):
     week = plan.get("week_commencing", "unknown")
-    path = PLANS_DIR / f"plan_{week}.json"
-    with open(path, "w") as f:
-        json.dump(plan, f, indent=2)
+    db.save_plan(athlete_id, week, json.dumps(plan))
 
 
-def load_all_plans() -> list[dict]:
-    if not PLANS_DIR.exists():
-        return []
+def load_all_plans(athlete_id: int) -> list[dict]:
     plans = []
-    for p in sorted(PLANS_DIR.glob("plan_*.json"), reverse=True):
-        with open(p) as f:
-            try:
-                plans.append(json.load(f))
-            except json.JSONDecodeError:
-                pass
+    for raw in db.load_all_plans(athlete_id):
+        try:
+            plans.append(json.loads(raw))
+        except json.JSONDecodeError:
+            pass
     return plans
