@@ -56,22 +56,22 @@
     {
       "day": "Thursday",
       "type": "Threshold",
-      "duration_min": 75,
+      "duration_min": 65,
       "description": "Moderate threshold work to maintain fitness. One solid effort block with recovery on either side. This is your only intensity session this week.",
       "structure": [
         {
           "label": "Warm-up",
-          "duration_min": 15,
+          "duration_min": 25,
           "zone": "Z1-Z2",
           "power_pct": "55-75%",
           "notes": "Gradual build. Start easy and feel the legs warming up."
         },
         {
           "label": "Main set",
-          "duration_min": 40,
+          "duration_min": 20,
           "zone": "Z3-Z4",
           "power_pct": "88-105%",
-          "notes": "2 \u00d7 20 min at threshold effort (around 240 W), with 5 min easy (Z1) between. Aim for steady, controllable intensity."
+          "notes": "2 \u00d7 10 min at threshold effort (around 240 W), with 5 min easy (Z1) between. Aim for steady, controllable intensity."
         },
         {
           "label": "Cool-down",

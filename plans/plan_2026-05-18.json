@@ -1,0 +1,117 @@
+{
+  "week_commencing": "2026-05-18",
+  "summary": "Recovery-focused week with a single 10-minute power test on Wednesday; all other sessions are low-intensity base work to rebuild fitness after recent reduced training.",
+  "days": [
+    {
+      "day": "Monday",
+      "type": "Easy",
+      "duration_min": 60,
+      "description": "Easy spin to begin the week gently. Keep effort conversational and stay in Z1-Z2 throughout. This is about aerobic activation, not stress.",
+      "structure": [
+        {
+          "label": "Full session",
+          "duration_min": 60,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Steady, comfortable pace. Heart rate 100\u2013130 bpm. Spin easy on flat or rolling terrain. Focus on smooth pedal strokes."
+        }
+      ]
+    },
+    {
+      "day": "Tuesday",
+      "type": "Easy",
+      "duration_min": 75,
+      "description": "Another easy ride to accumulate low-intensity volume. Slightly longer than Monday but same effort level\u2014this builds base fitness without fatigue.",
+      "structure": [
+        {
+          "label": "Full session",
+          "duration_min": 75,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Relaxed pace, keep HR below 130 bpm. Gravel is fine. Aim for steady, rhythmic breathing\u2014you should be able to chat."
+        }
+      ]
+    },
+    {
+      "day": "Wednesday",
+      "type": "Threshold",
+      "duration_min": 45,
+      "description": "Short, controlled session built around your 10-minute power test. Warm up well, then perform the test, then cool down. This gauges current fitness without excessive fatigue.",
+      "structure": [
+        {
+          "label": "Warm-up",
+          "duration_min": 15,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Easy spin for 10 minutes, then 2\u20133 short 20\u201330 second buildups to 90\u2013100% effort to prime the system."
+        },
+        {
+          "label": "10-minute power test",
+          "duration_min": 10,
+          "zone": "Z4-Z5",
+          "power_pct": "90\u2013105%",
+          "notes": "All-out sustainable effort for exactly 10 minutes. Record average power. Treat it as a fitness checkpoint, not a race."
+        },
+        {
+          "label": "Cool-down",
+          "duration_min": 20,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Easy spin to recover. Let HR drop back to Z1-Z2 range. Focus on breathing and relaxation."
+        }
+      ]
+    },
+    {
+      "day": "Thursday",
+      "type": "Easy",
+      "duration_min": 60,
+      "description": "Recovery spin after Wednesday's test. Keep intensity very low to allow the central nervous system to recover from the high-intensity effort.",
+      "structure": [
+        {
+          "label": "Full session",
+          "duration_min": 60,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Very easy, conversational pace. HR should stay below 125 bpm. This is genuine recovery\u2014no hard efforts."
+        }
+      ]
+    },
+    {
+      "day": "Friday",
+      "type": "Easy",
+      "duration_min": 75,
+      "description": "Slightly longer easy ride to build weekly volume. Same low intensity, just a bit more time on the bike.",
+      "structure": [
+        {
+          "label": "Full session",
+          "duration_min": 75,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Steady, comfortable ride. Gravel terrain is fine. Aim for even pacing and smooth cadence. Stay relaxed."
+        }
+      ]
+    },
+    {
+      "day": "Saturday",
+      "type": "Endurance",
+      "duration_min": 120,
+      "description": "Longer easy ride to cap the week and build aerobic base. This is your longest session of the week, but intensity remains low.",
+      "structure": [
+        {
+          "label": "Full session",
+          "duration_min": 120,
+          "zone": "Z1-Z2",
+          "power_pct": "55-75%",
+          "notes": "Extended steady effort at comfortable pace. HR 105\u2013130 bpm. Break it into two 60-minute sections mentally if helpful. Stay hydrated and well-fuelled."
+        }
+      ]
+    },
+    {
+      "day": "Sunday",
+      "type": "Rest",
+      "duration_min": 0,
+      "description": "Full rest day. No riding. Use this time to recover physically and mentally, prepare kit, and plan the week ahead.",
+      "structure": []
+    }
+  ]
+}

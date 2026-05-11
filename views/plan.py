@@ -3,6 +3,7 @@ import streamlit as st
 
 from agent.plan_image import generate_plan_image
 from agent.planner import generate_plan
+from data.ics_export import open_in_calendar, save_ics_dialog
 from data.plan_store import load_all_plans, save_plan
 
 _TYPE_COLOR = {
@@ -32,11 +33,48 @@ _SESSION_TYPES = list(_TYPE_COLOR.keys())
 _ZONES = list(_ZONE_COLOR.keys())
 
 
+import re
+
+
 def _fmt_duration(minutes: int) -> str:
     if minutes >= 60:
         h, m = divmod(minutes, 60)
         return f"{h}h {m}min" if m else f"{h}h"
     return f"{minutes}min"
+
+
+def _fmt_power(power_pct: str, ftp: int) -> str:
+    """Append computed watt range to a power_pct string, e.g. '55-75% (110-150 W)'."""
+    if not power_pct or not ftp:
+        return power_pct or "—"
+    s = power_pct.strip()
+
+    # Range: "55-75%" or "55–75%"
+    m = re.match(r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)%", s)
+    if m:
+        lo = round(float(m.group(1)) * ftp / 100)
+        hi = round(float(m.group(2)) * ftp / 100)
+        return f"{s} ({lo}–{hi} W)"
+
+    # Less-than: "< 55%"
+    m = re.match(r"[<＜]\s*(\d+(?:\.\d+)?)%", s)
+    if m:
+        w = round(float(m.group(1)) * ftp / 100)
+        return f"{s} (<{w} W)"
+
+    # Greater-than: "> 120%"
+    m = re.match(r"[>＞]\s*(\d+(?:\.\d+)?)%", s)
+    if m:
+        w = round(float(m.group(1)) * ftp / 100)
+        return f"{s} (>{w} W)"
+
+    # Single value: "100%"
+    m = re.match(r"(\d+(?:\.\d+)?)%", s)
+    if m:
+        w = round(float(m.group(1)) * ftp / 100)
+        return f"{s} ({w} W)"
+
+    return s
 
 
 def _zone_bar(structure: list[dict], total_min: int):
@@ -59,14 +97,14 @@ def _zone_bar(structure: list[dict], total_min: int):
     )
 
 
-def _structure_table(structure: list[dict]):
+def _structure_table(structure: list[dict], ftp: int = 0):
     rows = []
     for step in structure:
         rows.append({
             "Step": step.get("label", "—"),
             "Duration": _fmt_duration(step["duration_min"]) if step.get("duration_min") else "—",
             "Zone": step.get("zone", "—"),
-            "Power": step.get("power_pct", "—"),
+            "Power": _fmt_power(step.get("power_pct", ""), ftp),
             "Notes": step.get("notes", ""),
         })
     st.dataframe(
@@ -175,7 +213,7 @@ def _edit_form(idx: int, day: dict):
         st.rerun()
 
 
-def _day_card_editable(idx: int, day: dict, n_days: int):
+def _day_card_editable(idx: int, day: dict, n_days: int, ftp: int = 0):
     session_type = day.get("type", "Rest")
     color = _TYPE_COLOR.get(session_type, "#6b7280")
     structure = day.get("structure", [])
@@ -212,12 +250,12 @@ def _day_card_editable(idx: int, day: dict, n_days: int):
             _edit_form(idx, day)
         elif session_type != "Rest" and structure:
             _zone_bar(structure, total_min)
-            _structure_table(structure)
+            _structure_table(structure, ftp)
 
 
 # ── Read-only plan render (used for history) ──────────────────────────────────
 
-def _day_card_readonly(day: dict):
+def _day_card_readonly(day: dict, ftp: int = 0):
     session_type = day.get("type", "")
     color = _TYPE_COLOR.get(session_type, "#6b7280")
     structure = day.get("structure", [])
@@ -236,7 +274,7 @@ def _day_card_readonly(day: dict):
         )
         if session_type != "Rest" and structure:
             _zone_bar(structure, total_min)
-            _structure_table(structure)
+            _structure_table(structure, ftp)
 
 
 def _weekly_summary(plan: dict):
@@ -256,12 +294,13 @@ def _weekly_summary(plan: dict):
         st.caption(f"Total planned time: {_fmt_duration(total_min)}")
 
 
-def _render_plan_readonly(plan: dict):
+def _render_plan_readonly(plan: dict, ftp: int = 0):
     week = plan.get("week_commencing", "")
     st.markdown(f"**Week of {week}** — {plan.get('summary', '')}")
+    btn_c1, btn_c2 = st.columns([1, 1])
     try:
         img_bytes = generate_plan_image(plan)
-        st.download_button(
+        btn_c1.download_button(
             label="Download as image",
             data=img_bytes,
             file_name=f"training_plan_{week}.png",
@@ -269,10 +308,35 @@ def _render_plan_readonly(plan: dict):
         )
     except Exception:
         pass
+    if btn_c2.button("Export to Calendar (.ics)", key=f"ics_export_{week}"):
+        ok, result = save_ics_dialog(plan, ftp)
+        if ok:
+            st.session_state["ics_saved_path"] = result
+            st.rerun()
+        elif result != "cancelled":
+            st.toast(f"Could not save file: {result}", icon="❌")
+
+    if path := st.session_state.pop("ics_saved_path", None):
+        _show_ics_saved(path)
+
     st.divider()
     for day in plan.get("days", []):
-        _day_card_readonly(day)
+        _day_card_readonly(day, ftp)
     _weekly_summary(plan)
+
+
+# ── ICS save confirmation dialog ──────────────────────────────────────────────
+
+@st.dialog("Saved to Calendar")
+def _show_ics_saved(filepath: str):
+    st.success(f"Saved to:\n`{filepath}`")
+    st.caption("Open it to import into Calendar, or AirDrop it to your iPhone.")
+    col1, col2 = st.columns(2)
+    if col1.button("Open in Calendar", type="primary", use_container_width=True):
+        open_in_calendar(filepath)
+        st.rerun()
+    if col2.button("Done", use_container_width=True):
+        st.rerun()
 
 
 # ── Tab renderers ─────────────────────────────────────────────────────────────
@@ -282,7 +346,7 @@ def render(activities: list[dict], load_df: pd.DataFrame, session: dict):
     with tab_current:
         _render_current(activities, load_df, session)
     with tab_history:
-        _render_history()
+        _render_history(session)
 
 
 def _render_current(activities, load_df, session):
@@ -338,12 +402,15 @@ def _render_current(activities, load_df, session):
         st.caption("Plans are generated by Claude AI using your Strava data and the parameters set in Settings.")
         return
 
-    # Download button for current plan
+    ftp = session.get("ftp", 0) or 0
+
+    # Download buttons for current plan
     week = plan.get("week_commencing", "")
     st.markdown(f"**Week of {week}** — {plan.get('summary', '')}")
+    btn_c1, btn_c2 = st.columns([1, 1])
     try:
         img_bytes = generate_plan_image(plan)
-        st.download_button(
+        btn_c1.download_button(
             label="Download as image",
             data=img_bytes,
             file_name=f"training_plan_{week}.png",
@@ -351,27 +418,38 @@ def _render_current(activities, load_df, session):
         )
     except Exception:
         pass
+    if btn_c2.button("Export to Calendar (.ics)", key="ics_export_current"):
+        ok, result = save_ics_dialog(plan, ftp)
+        if ok:
+            st.session_state["ics_saved_path"] = result
+            st.rerun()
+        elif result != "cancelled":
+            st.toast(f"Could not save file: {result}", icon="❌")
+
+    if path := st.session_state.pop("ics_saved_path", None):
+        _show_ics_saved(path)
 
     st.divider()
 
     days = plan.get("days", [])
     for idx, day in enumerate(days):
-        _day_card_editable(idx, day, len(days))
+        _day_card_editable(idx, day, len(days), ftp)
 
     _weekly_summary(plan)
 
 
-def _render_history():
+def _render_history(session: dict):
     st.header("Plan History")
     all_plans = load_all_plans()
     if not all_plans:
         st.info("No saved plans yet. Generate your first plan above.")
         return
 
+    ftp = session.get("ftp", 0) or 0
     options = {p.get("week_commencing", "Unknown"): p for p in all_plans}
     selected_week = st.selectbox(
         "Select week", list(options.keys()),
         format_func=lambda w: f"Week of {w}",
     )
     if selected_week:
-        _render_plan_readonly(options[selected_week])
+        _render_plan_readonly(options[selected_week], ftp)

@@ -12,6 +12,7 @@ from auth.strava_oauth import (
 )
 from data.strava_client import get_athlete, get_parsed_activities, get_athlete_zones, parse_hr_zones
 from data.user_settings import load_settings
+from data.plan_store import load_all_plans
 from metrics.training_load import compute_training_load
 from views import overview, plan, settings as settings_view, this_week
 
@@ -52,6 +53,14 @@ if "settings_loaded" not in st.session_state:
     st.session_state["rest_days"] = saved.get("rest_days", ["Sunday"])
     st.session_state["strava_zones_loaded"] = False
     st.session_state["settings_loaded"] = True
+
+if "current_plan" not in st.session_state:
+    from datetime import date, timedelta
+    today = date.today()
+    this_monday = (today - timedelta(days=today.weekday())).isoformat()
+    all_plans = load_all_plans()
+    matched = next((p for p in all_plans if p.get("week_commencing") == this_monday), None)
+    st.session_state["current_plan"] = matched or (all_plans[0] if all_plans else None)
 
 # ── Fetch Strava data (cached, no user-param dependency) ──────────────────────
 

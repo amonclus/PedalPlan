@@ -1,1 +1,2 @@
-streamlit run app.py --server.port 8501
+source .venv/bin/activate
+python3 desktop_app.py
