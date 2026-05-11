@@ -3,7 +3,7 @@ import streamlit as st
 
 from agent.plan_image import generate_plan_image
 from agent.planner import generate_plan
-from data.ics_export import open_in_calendar, save_ics_dialog
+from data.ics_export import generate_ics
 from data.plan_store import load_all_plans, save_plan
 
 _TYPE_COLOR = {
@@ -308,35 +308,18 @@ def _render_plan_readonly(plan: dict, ftp: int = 0):
         )
     except Exception:
         pass
-    if btn_c2.button("Export to Calendar (.ics)", key=f"ics_export_{week}"):
-        ok, result = save_ics_dialog(plan, ftp)
-        if ok:
-            st.session_state["ics_saved_path"] = result
-            st.rerun()
-        elif result != "cancelled":
-            st.toast(f"Could not save file: {result}", icon="❌")
-
-    if path := st.session_state.pop("ics_saved_path", None):
-        _show_ics_saved(path)
+    btn_c2.download_button(
+        label="Export to Calendar (.ics)",
+        data=generate_ics(plan, ftp),
+        file_name=f"training_plan_{week}.ics",
+        mime="text/calendar",
+        key=f"ics_export_{week}",
+    )
 
     st.divider()
     for day in plan.get("days", []):
         _day_card_readonly(day, ftp)
     _weekly_summary(plan)
-
-
-# ── ICS save confirmation dialog ──────────────────────────────────────────────
-
-@st.dialog("Saved to Calendar")
-def _show_ics_saved(filepath: str):
-    st.success(f"Saved to:\n`{filepath}`")
-    st.caption("Open it to import into Calendar, or AirDrop it to your iPhone.")
-    col1, col2 = st.columns(2)
-    if col1.button("Open in Calendar", type="primary", use_container_width=True):
-        open_in_calendar(filepath)
-        st.rerun()
-    if col2.button("Done", use_container_width=True):
-        st.rerun()
 
 
 # ── Tab renderers ─────────────────────────────────────────────────────────────
@@ -426,16 +409,13 @@ def _render_current(activities, load_df, session):
         )
     except Exception:
         pass
-    if btn_c2.button("Export to Calendar (.ics)", key="ics_export_current"):
-        ok, result = save_ics_dialog(plan, ftp)
-        if ok:
-            st.session_state["ics_saved_path"] = result
-            st.rerun()
-        elif result != "cancelled":
-            st.toast(f"Could not save file: {result}", icon="❌")
-
-    if path := st.session_state.pop("ics_saved_path", None):
-        _show_ics_saved(path)
+    btn_c2.download_button(
+        label="Export to Calendar (.ics)",
+        data=generate_ics(plan, ftp),
+        file_name=f"training_plan_{week}.ics",
+        mime="text/calendar",
+        key="ics_export_current",
+    )
 
     st.divider()
 
