@@ -62,6 +62,15 @@ def revoke_tokens(athlete_id: int):
     db.delete_user(athlete_id)
 
 
+def restore_session(athlete_id: int, refresh_token: str) -> bool:
+    """Re-establish a session using a stored refresh token. Returns True on success."""
+    try:
+        _refresh_tokens(athlete_id, refresh_token)
+        return True
+    except Exception:
+        return False
+
+
 def _refresh_tokens(athlete_id: int, refresh_token: str) -> dict:
     resp = requests.post(TOKEN_URL, data={
         "client_id": CLIENT_ID,

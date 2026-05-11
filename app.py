@@ -1,7 +1,3 @@
-import os
-import secrets
-import time
-
 import streamlit as st
 from dotenv import load_dotenv
 from streamlit_cookies_controller import CookieController
@@ -13,6 +9,7 @@ from auth.strava_oauth import (
     exchange_code_for_tokens,
     get_authorization_url,
     get_valid_access_token,
+    restore_session,
     revoke_tokens,
 )
 from data.strava_client import get_athlete, get_athlete_zones, get_parsed_activities, parse_hr_zones
@@ -30,38 +27,31 @@ st.set_page_config(
 
 db.init_db()
 
-_SECURE_COOKIE = os.getenv("STRAVA_REDIRECT_URI", "http://localhost:8501").startswith("https")
-_SESSION_TTL = 30 * 24 * 3600  # 30 days
-
 controller = CookieController()
 
 # ── Logout handler ─────────────────────────────────────────────────────────────
-# Must run before session resolution so we clear state before re-reading it.
 
 if st.session_state.get("_do_logout"):
-    sid = st.session_state.get("_sid")
     athlete_id = st.session_state.get("athlete_id")
-    if sid:
-        db.delete_session(sid)
-        controller.remove("sid")
     if athlete_id:
         revoke_tokens(athlete_id)
+    controller.remove("auth")
     st.session_state.clear()
     st.rerun()
 
 # ── Session resolution ─────────────────────────────────────────────────────────
-# athlete_id is kept in st.session_state throughout a browser tab session.
-# On a fresh tab, restore it from the "sid" cookie if valid.
+# Cookie stores "athlete_id:refresh_token" so the session survives app restarts.
 
 if "athlete_id" not in st.session_state:
-    sid = controller.get("sid")
-    if sid:
-        athlete_id = db.get_session(sid)
-        if athlete_id:
-            st.session_state["athlete_id"] = athlete_id
-            st.session_state["_sid"] = sid
-        else:
-            controller.remove("sid")
+    raw = controller.get("auth")
+    if raw and ":" in raw:
+        try:
+            aid_str, rt = raw.split(":", 1)
+            athlete_id = int(aid_str)
+            if restore_session(athlete_id, rt):
+                st.session_state["athlete_id"] = athlete_id
+        except Exception:
+            controller.remove("auth")
 
 # ── OAuth callback ─────────────────────────────────────────────────────────────
 
@@ -69,14 +59,12 @@ params = st.query_params
 if "code" in params and "athlete_id" not in st.session_state:
     try:
         athlete_id = exchange_code_for_tokens(params["code"])
-        token = secrets.token_hex(32)
-        expires_at = int(time.time()) + _SESSION_TTL
-        db.create_session(token, athlete_id, expires_at)
-        controller.set("sid", token, max_age=_SESSION_TTL, secure=_SECURE_COOKIE, same_site="Lax")
+        tokens = db.get_user_tokens(athlete_id)
+        # Set cookie before clearing params — do NOT call st.rerun() immediately
+        # so the component has time to write to the browser.
+        controller.set("auth", f"{athlete_id}:{tokens['refresh_token']}")
         st.session_state["athlete_id"] = athlete_id
-        st.session_state["_sid"] = token
         st.query_params.clear()
-        st.rerun()
     except Exception as e:
         st.error(f"Authentication failed: {e}")
 
