@@ -66,11 +66,11 @@ def render(athlete: dict, strava_zones: dict):
 
         current_hr = st.session_state["hr_zones"]
         zcols = st.columns(5)
-        z1 = zcols[0].number_input("Z1", min_value=60, max_value=220, value=current_hr["z1"])
-        z2 = zcols[1].number_input("Z2", min_value=60, max_value=220, value=current_hr["z2"])
-        z3 = zcols[2].number_input("Z3", min_value=60, max_value=220, value=current_hr["z3"])
-        z4 = zcols[3].number_input("Z4", min_value=60, max_value=220, value=current_hr["z4"])
-        z5 = zcols[4].number_input("Z5", min_value=60, max_value=220, value=current_hr["z5"])
+        z1 = zcols[0].number_input("Z1", min_value=0, max_value=220, value=current_hr["z1"])
+        z2 = zcols[1].number_input("Z2", min_value=0, max_value=220, value=current_hr["z2"])
+        z3 = zcols[2].number_input("Z3", min_value=0, max_value=220, value=current_hr["z3"])
+        z4 = zcols[3].number_input("Z4", min_value=0, max_value=220, value=current_hr["z4"])
+        z5 = zcols[4].number_input("Z5", min_value=0, max_value=220, value=current_hr["z5"])
 
         saved = st.form_submit_button("Save Parameters", type="primary")
 
