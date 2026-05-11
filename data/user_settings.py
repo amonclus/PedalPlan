@@ -8,6 +8,10 @@ DEFAULTS = {
     "hr_zones": {"z1": 100, "z2": 120, "z3": 140, "z4": 160, "z5": 175},
     "goal": "Base fitness",
     "rest_days": ["Sunday"],
+    # Running-specific
+    "run_threshold_pace": "5:30",
+    "run_weekly_km": 40,
+    "run_goal": "Base fitness",
 }
 
 

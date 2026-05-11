@@ -104,6 +104,79 @@ def render(athlete: dict, strava_zones: dict):
 
     st.divider()
 
+    # ── Running parameters ─────────────────────────────────────────────────────
+    st.subheader("Running Parameters")
+    st.caption("Used to generate your running training plan.")
+
+    with st.form("run_params"):
+        rc1, rc2 = st.columns(2)
+        threshold_pace = rc1.text_input(
+            "Threshold pace (MM:SS /km)",
+            value=st.session_state.get("run_threshold_pace", "5:30"),
+            help="The pace you can sustain for ~1 hour at maximum effort. Used to derive your pace zones.",
+        )
+        run_weekly_km = rc2.number_input(
+            "Target weekly distance (km)",
+            min_value=5, max_value=300,
+            value=int(st.session_state.get("run_weekly_km", 40)),
+            step=5,
+        )
+        run_goal = st.selectbox(
+            "Running goal",
+            ["Base fitness", "5K", "10K", "Half marathon", "Marathon", "Trail running", "Maintain fitness", "Recovery"],
+            index=["Base fitness", "5K", "10K", "Half marathon", "Marathon", "Trail running", "Maintain fitness", "Recovery"].index(
+                st.session_state.get("run_goal", "Base fitness")
+            ),
+        )
+        saved_run = st.form_submit_button("Save Running Parameters", type="primary")
+
+    if saved_run:
+        # Validate pace format
+        parts = threshold_pace.strip().split(":")
+        if len(parts) == 2 and all(p.isdigit() for p in parts):
+            new_run_settings = {
+                **{k: st.session_state[k] for k in ("ftp", "weekly_hours", "hr_zones", "goal", "rest_days")},
+                "run_threshold_pace": threshold_pace.strip(),
+                "run_weekly_km": int(run_weekly_km),
+                "run_goal": run_goal,
+            }
+            st.session_state["run_threshold_pace"] = threshold_pace.strip()
+            st.session_state["run_weekly_km"] = int(run_weekly_km)
+            st.session_state["run_goal"] = run_goal
+            save_settings(athlete_id, new_run_settings)
+            st.session_state["_run_settings_saved"] = True
+            st.rerun()
+        else:
+            st.error("Invalid pace format. Use MM:SS, e.g. 5:30")
+
+    if st.session_state.pop("_run_settings_saved", False):
+        st.success("Running parameters saved.")
+
+    # Pace zones table
+    threshold_pace_val = st.session_state.get("run_threshold_pace", "5:30")
+    try:
+        parts = threshold_pace_val.strip().split(":")
+        t = int(parts[0]) * 60 + int(parts[1])
+
+        def _p(secs: int) -> str:
+            m, s = divmod(max(0, secs), 60)
+            return f"{m}:{s:02d}"
+
+        pace_rows = [
+            {"Zone": "Z1", "Name": "Recovery",   "Pace range (/km)": f"slower than {_p(t + 90)}"},
+            {"Zone": "Z2", "Name": "Easy",        "Pace range (/km)": f"{_p(t + 45)} – {_p(t + 90)}"},
+            {"Zone": "Z3", "Name": "Tempo",       "Pace range (/km)": f"{_p(t + 10)} – {_p(t + 45)}"},
+            {"Zone": "Z4", "Name": "Threshold",   "Pace range (/km)": f"{_p(t - 10)} – {_p(t + 10)}"},
+            {"Zone": "Z5", "Name": "VO2 Max",     "Pace range (/km)": f"faster than {_p(t - 10)}"},
+        ]
+        st.caption(f"Pace zones derived from threshold pace of {threshold_pace_val} /km:")
+        import pandas as pd
+        st.dataframe(pd.DataFrame(pace_rows), use_container_width=True, hide_index=True)
+    except Exception:
+        pass
+
+    st.divider()
+
     # ── Claude API key ─────────────────────────────────────────────────────────
     st.subheader("Claude API Key")
     st.caption(

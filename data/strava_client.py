@@ -15,12 +15,10 @@ def get_athlete(access_token: str) -> dict:
     return resp.json()
 
 
-def get_activities(access_token: str, weeks: int = 16) -> list[dict]:
-    """Fetch rides from the past `weeks` weeks, handling pagination."""
+def _fetch_activities(access_token: str, weeks: int) -> list[dict]:
+    """Fetch all activities from the past `weeks` weeks, handling pagination."""
     after = int((datetime.now(timezone.utc) - timedelta(weeks=weeks)).timestamp())
-    activities = []
-    page = 1
-
+    activities, page = [], 1
     while True:
         resp = requests.get(
             f"{BASE_URL}/athlete/activities",
@@ -33,16 +31,14 @@ def get_activities(access_token: str, weeks: int = 16) -> list[dict]:
             break
         activities.extend(batch)
         page += 1
-
-    return [a for a in activities if a.get("type") == "Ride"]
+    return activities
 
 
 def parse_activity(raw: dict) -> dict:
-    """Extract the fields we care about from a raw Strava activity."""
+    """Extract cycling fields from a raw Strava activity."""
     moving_time_h = raw.get("moving_time", 0) / 3600
     avg_watts = raw.get("average_watts")
     avg_hr = raw.get("average_heartrate")
-
     return {
         "id": raw["id"],
         "name": raw.get("name", ""),
@@ -56,9 +52,43 @@ def parse_activity(raw: dict) -> dict:
     }
 
 
+def parse_run_activity(raw: dict) -> dict:
+    """Extract running fields from a raw Strava activity."""
+    moving_time_h = raw.get("moving_time", 0) / 3600
+    distance_km = round(raw.get("distance", 0) / 1000, 2)
+    avg_hr = raw.get("average_heartrate")
+    if distance_km > 0 and moving_time_h > 0:
+        pace_sec_km = (moving_time_h * 3600) / distance_km
+        m, s = divmod(int(pace_sec_km), 60)
+        avg_pace = f"{m}:{s:02d}"
+    else:
+        avg_pace = None
+    return {
+        "id": raw["id"],
+        "name": raw.get("name", ""),
+        "date": raw.get("start_date_local", "")[:10],
+        "distance_km": round(distance_km, 1),
+        "moving_time_h": round(moving_time_h, 2),
+        "elevation_m": raw.get("total_elevation_gain", 0),
+        "avg_hr": avg_hr,
+        "avg_pace": avg_pace,
+        "has_power": False,
+        "avg_watts": None,
+    }
+
+
 def get_parsed_activities(access_token: str, weeks: int = 16) -> list[dict]:
-    raw = get_activities(access_token, weeks=weeks)
-    return [parse_activity(a) for a in raw]
+    raw = _fetch_activities(access_token, weeks)
+    return [parse_activity(a) for a in raw if a.get("type") == "Ride"]
+
+
+def get_parsed_run_activities(access_token: str, weeks: int = 16) -> list[dict]:
+    raw = _fetch_activities(access_token, weeks)
+    return [
+        parse_run_activity(a)
+        for a in raw
+        if a.get("type") in ("Run", "VirtualRun")
+    ]
 
 
 def get_athlete_zones(access_token: str) -> dict:

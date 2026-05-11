@@ -108,14 +108,16 @@ def save_settings_json(athlete_id: int, settings_json: str):
 
 # ── Plans ─────────────────────────────────────────────────────────────────────
 
-def save_plan(athlete_id: int, week_commencing: str, plan_json: str):
-    (_plans_dir(athlete_id) / f"plan_{week_commencing}.json").write_text(plan_json)
+def save_plan(athlete_id: int, week_commencing: str, plan_json: str, sport: str = "cycling"):
+    prefix = "run_plan" if sport == "running" else "plan"
+    (_plans_dir(athlete_id) / f"{prefix}_{week_commencing}.json").write_text(plan_json)
 
 
-def load_all_plans(athlete_id: int) -> list[str]:
+def load_all_plans(athlete_id: int, sport: str = "cycling") -> list[str]:
+    prefix = "run_plan" if sport == "running" else "plan"
     return [
         p.read_text()
-        for p in sorted(_plans_dir(athlete_id).glob("plan_*.json"), reverse=True)
+        for p in sorted(_plans_dir(athlete_id).glob(f"{prefix}_*.json"), reverse=True)
     ]
 
 

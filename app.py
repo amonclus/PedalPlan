@@ -12,11 +12,18 @@ from auth.strava_oauth import (
     restore_session,
     revoke_tokens,
 )
-from data.strava_client import get_athlete, get_athlete_zones, get_parsed_activities, parse_hr_zones
+from data.strava_client import (
+    get_athlete,
+    get_athlete_zones,
+    get_parsed_activities,
+    get_parsed_run_activities,
+    parse_hr_zones,
+)
 from data.user_settings import load_settings
 from data.plan_store import load_all_plans
 from metrics.training_load import compute_training_load
 from views import overview, plan, settings as settings_view, this_week
+from views import run_overview, run_plan, run_this_week
 
 st.set_page_config(
     page_title="Training Dashboard",
@@ -40,7 +47,6 @@ if st.session_state.get("_do_logout"):
     st.rerun()
 
 # ── Session resolution ─────────────────────────────────────────────────────────
-# Cookie stores "athlete_id:refresh_token" so the session survives app restarts.
 
 if "athlete_id" not in st.session_state:
     raw = controller.get("auth")
@@ -60,8 +66,6 @@ if "code" in params and "athlete_id" not in st.session_state:
     try:
         athlete_id = exchange_code_for_tokens(params["code"])
         tokens = db.get_user_tokens(athlete_id)
-        # Set cookie before clearing params — do NOT call st.rerun() immediately
-        # so the component has time to write to the browser.
         controller.set("auth", f"{athlete_id}:{tokens['refresh_token']}")
         st.session_state["athlete_id"] = athlete_id
         st.query_params.clear()
@@ -87,6 +91,9 @@ if "settings_loaded" not in st.session_state:
     st.session_state["hr_zones"] = saved["hr_zones"]
     st.session_state["goal"] = saved.get("goal", "Base fitness")
     st.session_state["rest_days"] = saved.get("rest_days", ["Sunday"])
+    st.session_state["run_threshold_pace"] = saved.get("run_threshold_pace", "5:30")
+    st.session_state["run_weekly_km"] = saved.get("run_weekly_km", 40)
+    st.session_state["run_goal"] = saved.get("run_goal", "Base fitness")
     st.session_state["strava_zones_loaded"] = False
     st.session_state["settings_loaded"] = True
 
@@ -97,9 +104,17 @@ if "current_plan" not in st.session_state:
     from datetime import date, timedelta
     today = date.today()
     this_monday = (today - timedelta(days=today.weekday())).isoformat()
-    all_plans = load_all_plans(athlete_id)
+    all_plans = load_all_plans(athlete_id, sport="cycling")
     matched = next((p for p in all_plans if p.get("week_commencing") == this_monday), None)
     st.session_state["current_plan"] = matched or (all_plans[0] if all_plans else None)
+
+if "current_run_plan" not in st.session_state:
+    from datetime import date, timedelta
+    today = date.today()
+    this_monday = (today - timedelta(days=today.weekday())).isoformat()
+    all_run_plans = load_all_plans(athlete_id, sport="running")
+    matched = next((p for p in all_run_plans if p.get("week_commencing") == this_monday), None)
+    st.session_state["current_run_plan"] = matched or (all_run_plans[0] if all_run_plans else None)
 
 # ── Fetch Strava data ──────────────────────────────────────────────────────────
 
@@ -108,12 +123,13 @@ def load_strava_data(aid: int) -> tuple:
     token = get_valid_access_token(aid)
     athlete = get_athlete(token)
     activities = get_parsed_activities(token, weeks=16)
+    run_activities = get_parsed_run_activities(token, weeks=16)
     zones = get_athlete_zones(token)
-    return athlete, activities, zones
+    return athlete, activities, run_activities, zones
 
 
 try:
-    athlete, activities, strava_zones = load_strava_data(athlete_id)
+    athlete, activities, run_activities, strava_zones = load_strava_data(athlete_id)
 except Exception as e:
     st.error(f"Failed to load Strava data: {e}")
     st.stop()
@@ -132,18 +148,43 @@ load_df = compute_training_load(
     hr_zones=st.session_state["hr_zones"],
 )
 
+run_load_df = compute_training_load(
+    run_activities,
+    ftp=0,
+    hr_zones=st.session_state["hr_zones"],
+)
+
+# ── Sport switcher ─────────────────────────────────────────────────────────────
+
+sport = st.radio(
+    "Sport",
+    ["🚴  Cycling", "🏃  Running"],
+    horizontal=True,
+    label_visibility="collapsed",
+    key="sport_switcher",
+)
+
+st.divider()
+
 # ── Navigation ─────────────────────────────────────────────────────────────────
 
-tab_overview, tab_week, tab_plan, tab_settings = st.tabs(["Overview", "This Week", "Plan", "Settings"])
-
-with tab_overview:
-    overview.render(athlete, activities, load_df)
-
-with tab_week:
-    this_week.render(activities, load_df, st.session_state)
-
-with tab_plan:
-    plan.render(activities, load_df, st.session_state)
-
-with tab_settings:
-    settings_view.render(athlete, strava_zones)
+if sport == "🚴  Cycling":
+    tab_overview, tab_week, tab_plan, tab_settings = st.tabs(["Overview", "This Week", "Plan", "Settings"])
+    with tab_overview:
+        overview.render(athlete, activities, load_df)
+    with tab_week:
+        this_week.render(activities, load_df, st.session_state)
+    with tab_plan:
+        plan.render(activities, load_df, st.session_state)
+    with tab_settings:
+        settings_view.render(athlete, strava_zones)
+else:
+    tab_overview, tab_week, tab_plan, tab_settings = st.tabs(["Overview", "This Week", "Plan", "Settings"])
+    with tab_overview:
+        run_overview.render(athlete, run_activities, run_load_df)
+    with tab_week:
+        run_this_week.render(run_activities, run_load_df, st.session_state)
+    with tab_plan:
+        run_plan.render(run_activities, run_load_df, st.session_state)
+    with tab_settings:
+        settings_view.render(athlete, strava_zones)
